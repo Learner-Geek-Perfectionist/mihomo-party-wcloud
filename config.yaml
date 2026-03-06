@@ -1,0 +1,68 @@
+core: mihomo
+enableSmartCore: false
+enableSmartOverride: true
+smartCoreUseLightGBM: false
+smartCoreCollectData: false
+smartCoreStrategy: sticky-sessions
+silentStart: false
+appTheme: dark
+useWindowFrame: true
+proxyInTray: true
+showCurrentProxyInTray: true
+trayProxyGroupStyle: default
+disableTrayIconColor: false
+maxLogDays: 7
+proxyCols: auto
+connectionDirection: desc
+connectionOrderBy: downloadSpeed
+useSubStore: true
+proxyDisplayMode: full
+proxyDisplayOrder: delay
+autoCheckUpdate: true
+autoCloseConnection: true
+subscriptionTimeout: 30000
+useNameserverPolicy: false
+controlDns: false
+controlSniff: true
+floatingWindowCompatMode: true
+disableHardwareAcceleration: false
+hideConnectionCardWave: false
+nameserverPolicy: {}
+siderOrder:
+  - sysproxy
+  - tun
+  - profile
+  - proxy
+  - rule
+  - resource
+  - override
+  - connection
+  - mihomo
+  - dns
+  - sniff
+  - log
+  - substore
+siderWidth: 250
+sysProxy:
+  enable: false
+  mode: manual
+triggerMainWindowBehavior: show
+showMixedPort: 7890
+enableMixedPort: true
+showSocksPort: 7891
+enableSocksPort: true
+showHttpPort: 7892
+enableHttpPort: true
+showRedirPort: 0
+enableRedirPort: false
+showTproxyPort: 0
+enableTproxyPort: false
+testProfileOnStart: true
+subStoreHost: 0.0.0.0
+showFloatingWindow: false
+disableTray: false
+profileDisplayDate: update
+language: zh-CN
+showTraffic: true
+connectionCardStatus: col-span-2
+originDNS: Empty

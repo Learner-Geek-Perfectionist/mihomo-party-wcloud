@@ -1,0 +1,4 @@
+# Never commit sensitive subscription data
+profile.yaml
+profiles/
+.DS_Store
