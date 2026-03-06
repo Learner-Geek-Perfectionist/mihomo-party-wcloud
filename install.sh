@@ -22,35 +22,7 @@ fi
 echo "mihomo party directory: $TARGET_DIR"
 echo
 
-# Step 1: Backup existing config
-BACKUP_DIR="$HOME/.mihomo-party-backup-$(date +%Y%m%d-%H%M%S)"
-BACKUP_FILES=()
-for f in config.yaml mihomo.yaml override.yaml; do
-    [[ -f "$TARGET_DIR/$f" ]] && BACKUP_FILES+=("$f")
-done
-if [[ -d "$TARGET_DIR/override" ]]; then
-    for f in "$TARGET_DIR/override/"*.yaml; do
-        [[ -f "$f" ]] && BACKUP_FILES+=("override/$(basename "$f")")
-    done
-fi
-
-if [[ ${#BACKUP_FILES[@]} -gt 0 ]]; then
-    echo "==> Backing up existing config to $BACKUP_DIR/"
-    if $DRY_RUN; then
-        for f in "${BACKUP_FILES[@]}"; do
-            echo "    would backup: $f"
-        done
-    else
-        mkdir -p "$BACKUP_DIR/override"
-        for f in "${BACKUP_FILES[@]}"; do
-            cp "$TARGET_DIR/$f" "$BACKUP_DIR/$f"
-            echo "    backed up: $f"
-        done
-    fi
-    echo
-fi
-
-# Step 2: Copy config.yaml and mihomo.yaml
+# Step 1: Copy config.yaml and mihomo.yaml
 echo "==> Installing config files"
 for f in config.yaml mihomo.yaml; do
     if $DRY_RUN; then
@@ -64,13 +36,25 @@ echo
 
 # Step 3: Install override
 echo "==> Installing override rule"
-OVERRIDE_ID=$(openssl rand -hex 5)$(printf '%x' "$(date +%s)" | tail -c 1)
-OVERRIDE_FILE="$OVERRIDE_ID.yaml"
 OVERRIDE_NAME="Claude专用 & 下载修复"
 OVERRIDE_TIMESTAMP=$(python3 -c "import time; print(int(time.time() * 1000))")
 
+EXISTING_ID=""
+if [[ -f "$TARGET_DIR/override.yaml" ]]; then
+    EXISTING_ID=$(grep -B1 "name: $OVERRIDE_NAME" "$TARGET_DIR/override.yaml" \
+        | grep 'id:' | sed 's/.*id:[[:space:]]*//' | tr -d '[:space:]' || true)
+fi
+
+if [[ -n "$EXISTING_ID" ]]; then
+    OVERRIDE_ID="$EXISTING_ID"
+    echo "    reusing existing override ID: $OVERRIDE_ID"
+else
+    OVERRIDE_ID=$(openssl rand -hex 5)$(printf '%x' "$(date +%s)" | tail -c 1)
+    echo "    generated new override ID: $OVERRIDE_ID"
+fi
+OVERRIDE_FILE="$OVERRIDE_ID.yaml"
+
 if $DRY_RUN; then
-    echo "    would generate override ID: $OVERRIDE_ID"
     echo "    would copy: $SCRIPT_DIR/override/claude-and-download-fix.yaml -> $TARGET_DIR/override/$OVERRIDE_FILE"
     echo "    would write override.yaml with entry:"
     echo "      - id: $OVERRIDE_ID"
@@ -80,18 +64,60 @@ if $DRY_RUN; then
     echo "        updated: $OVERRIDE_TIMESTAMP"
 else
     mkdir -p "$TARGET_DIR/override"
+
+    # Collect IDs of stale copies (same content, different ID) before overwriting
+    SRC_HASH=$(shasum -a 256 "$SCRIPT_DIR/override/claude-and-download-fix.yaml" | cut -d' ' -f1)
+    STALE_IDS=()
+    for f in "$TARGET_DIR/override/"*.yaml; do
+        [[ -f "$f" ]] || continue
+        fid=$(basename "$f" .yaml)
+        [[ "$fid" == "$OVERRIDE_ID" ]] && continue
+        fhash=$(shasum -a 256 "$f" | cut -d' ' -f1)
+        [[ "$fhash" == "$SRC_HASH" ]] && STALE_IDS+=("$fid")
+    done
+
     cp "$SCRIPT_DIR/override/claude-and-download-fix.yaml" "$TARGET_DIR/override/$OVERRIDE_FILE"
     echo "    installed override: $OVERRIDE_FILE"
 
-    cat > "$TARGET_DIR/override.yaml" <<EOF
-items:
-  - id: $OVERRIDE_ID
-    name: $OVERRIDE_NAME
-    type: local
-    ext: yaml
-    updated: $OVERRIDE_TIMESTAMP
-EOF
-    echo "    wrote override.yaml"
+    # Rebuild override.yaml: our entry first, then preserve others
+    {
+        echo "items:"
+        echo "  - id: $OVERRIDE_ID"
+        echo "    name: $OVERRIDE_NAME"
+        echo "    type: local"
+        echo "    ext: yaml"
+        echo "    updated: $OVERRIDE_TIMESTAMP"
+    } > "$TARGET_DIR/override.yaml.tmp"
+
+    # Append other existing override entries (skip ours by name)
+    if [[ -f "$TARGET_DIR/override.yaml" ]]; then
+        python3 -c "
+import re, sys
+text = open('$TARGET_DIR/override.yaml').read()
+blocks = re.split(r'(?=  - id:)', text)
+for block in blocks:
+    block = block.strip()
+    if not block.startswith('- id:'):
+        continue
+    if 'name: $OVERRIDE_NAME' in block:
+        continue
+    print('  ' + block)
+" >> "$TARGET_DIR/override.yaml.tmp" 2>/dev/null || true
+    fi
+    mv "$TARGET_DIR/override.yaml.tmp" "$TARGET_DIR/override.yaml"
+    echo "    wrote override.yaml (preserved other overrides)"
+
+    # Fix profile associations: replace stale override IDs with current one
+    if [[ -f "$TARGET_DIR/profile.yaml" && ${#STALE_IDS[@]} -gt 0 ]]; then
+        for stale_id in "${STALE_IDS[@]}"; do
+            if grep -q "$stale_id" "$TARGET_DIR/profile.yaml"; then
+                sed -i '' "s/$stale_id/$OVERRIDE_ID/g" "$TARGET_DIR/profile.yaml"
+                echo "    updated profile association: $stale_id -> $OVERRIDE_ID"
+            fi
+            rm -f "$TARGET_DIR/override/$stale_id.yaml"
+            echo "    removed stale override: $stale_id.yaml"
+        done
+    fi
 fi
 echo
 
