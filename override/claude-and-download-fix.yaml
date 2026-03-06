@@ -9,12 +9,9 @@
     icon: "https://claude.ai/favicon.ico"
 
   - name: 🌐 通用代理
-    type: url-test
+    type: select
     include-all-proxies: true
     filter: "^(?!.*(家宽|剩余|距离|套餐)).*$"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
-    tolerance: 50
 
 +rules:
   - DOMAIN-SUFFIX,anthropic.com,✴️ Claude专用
