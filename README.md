@@ -39,7 +39,8 @@ config.yaml（UI 层：主题/语言/侧栏/端口显示）
 ### 快速安装
 
 ```bash
-git clone <仓库地址> && cd mihomo-party-wcloud
+git clone git@github.com:Learner-Geek-Perfectionist/mihomo-party-wcloud.git
+cd mihomo-party-wcloud
 ./install.sh
 ```
 
