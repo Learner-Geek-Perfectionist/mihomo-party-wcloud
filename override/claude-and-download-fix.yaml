@@ -1,11 +1,8 @@
 +proxy-groups:
   - name: Claude专用
     type: select
-    proxies:
-      - "🇺🇸 美国家宽Hawaiian | 3.0x"
-      - "🇺🇸 美国家宽Frontier | 3.0x"
-      - "🇺🇸 美国家宽ATT | 3.0x"
-      - "🇺🇸 美国家宽Verizon | 3.0x"
+    include-all-proxies: true
+    filter: "美国家宽"
     icon: "https://claude.ai/favicon.ico"
 
   - name: 通用代理
