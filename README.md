@@ -12,6 +12,15 @@ Wcloud 订阅的 mihomo party 配置备份，方便在其他 macOS 设备上快�
 
 **不包含**：`profile.yaml`（含订阅 token）、`profiles/`（订阅缓存数据）。
 
+## 自动刷新订阅流量
+
+安装脚本会自动为 Wcloud 订阅开启定时刷新（每 6 小时），方便随时查看剩余流量：
+
+- `autoUpdate: true` — 启用自动更新
+- `interval: 360` — 每 360 分钟（6 小时）刷新一次
+
+> 前提：需要先手动添加 Wcloud 订阅，再运行 `install.sh`。
+
 ## 配置层级关系
 
 ```

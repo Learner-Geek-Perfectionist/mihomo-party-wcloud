@@ -121,6 +121,42 @@ for block in blocks:
 fi
 echo
 
+# Step 4: Enable auto-update for Wcloud subscription (every 6 hours)
+echo "==> Configuring Wcloud subscription auto-update"
+if [[ -f "$TARGET_DIR/profile.yaml" ]]; then
+    if grep -q "name: Wcloud" "$TARGET_DIR/profile.yaml"; then
+        if $DRY_RUN; then
+            echo "    would set: autoUpdate: true, interval: 360 (6 hours)"
+        else
+            python3 -c "
+import re
+text = open('$TARGET_DIR/profile.yaml').read()
+lines = text.split('\n')
+in_wcloud = False
+result = []
+for line in lines:
+    if 'name: Wcloud' in line:
+        in_wcloud = True
+    elif re.match(r'  - id:', line):
+        in_wcloud = False
+    if in_wcloud:
+        if 'autoUpdate:' in line:
+            line = re.sub(r'autoUpdate:.*', 'autoUpdate: true', line)
+        elif 'interval:' in line:
+            line = re.sub(r'interval:.*', 'interval: 360', line)
+    result.append(line)
+open('$TARGET_DIR/profile.yaml', 'w').write('\n'.join(result))
+"
+            echo "    set autoUpdate: true, interval: 360 (every 6 hours)"
+        fi
+    else
+        echo "    skipped: Wcloud subscription not found (add it first)"
+    fi
+else
+    echo "    skipped: profile.yaml not found (add subscription first)"
+fi
+echo
+
 # Done
 echo "==> Done!"
 echo
