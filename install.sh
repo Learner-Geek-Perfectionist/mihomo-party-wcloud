@@ -36,7 +36,7 @@ echo
 
 # Step 3: Install override
 echo "==> Installing override rule"
-OVERRIDE_NAME="Claude专用 & 下载修复"
+OVERRIDE_NAME="Loyalsoldier白名单 + Claude专用"
 OVERRIDE_TIMESTAMP=$(python3 -c "import time; print(int(time.time() * 1000))")
 
 EXISTING_ID=""
@@ -55,7 +55,7 @@ fi
 OVERRIDE_FILE="$OVERRIDE_ID.yaml"
 
 if $DRY_RUN; then
-    echo "    would copy: $SCRIPT_DIR/override/claude-and-download-fix.yaml -> $TARGET_DIR/override/$OVERRIDE_FILE"
+    echo "    would copy: $SCRIPT_DIR/override/loyalsoldier-whitelist-claude.yaml -> $TARGET_DIR/override/$OVERRIDE_FILE"
     echo "    would write override.yaml with entry:"
     echo "      - id: $OVERRIDE_ID"
     echo "        name: $OVERRIDE_NAME"
@@ -66,7 +66,7 @@ else
     mkdir -p "$TARGET_DIR/override"
 
     # Collect IDs of stale copies (same content, different ID) before overwriting
-    SRC_HASH=$(shasum -a 256 "$SCRIPT_DIR/override/claude-and-download-fix.yaml" | cut -d' ' -f1)
+    SRC_HASH=$(shasum -a 256 "$SCRIPT_DIR/override/loyalsoldier-whitelist-claude.yaml" | cut -d' ' -f1)
     STALE_IDS=()
     for f in "$TARGET_DIR/override/"*.yaml; do
         [[ -f "$f" ]] || continue
@@ -76,7 +76,7 @@ else
         [[ "$fhash" == "$SRC_HASH" ]] && STALE_IDS+=("$fid")
     done
 
-    cp "$SCRIPT_DIR/override/claude-and-download-fix.yaml" "$TARGET_DIR/override/$OVERRIDE_FILE"
+    cp "$SCRIPT_DIR/override/loyalsoldier-whitelist-claude.yaml" "$TARGET_DIR/override/$OVERRIDE_FILE"
     echo "    installed override: $OVERRIDE_FILE"
 
     # Rebuild override.yaml: our entry first, then preserve others
@@ -163,5 +163,5 @@ echo
 echo "Next steps:"
 echo "  1. Restart mihomo party"
 echo "  2. Add your Wcloud subscription: Profile -> Import -> paste URL"
-echo "  3. Enable override: Override -> toggle on \"Claude专用 & 下载修复\""
+echo "  3. Enable override: Override -> toggle on \"Loyalsoldier白名单 + Claude专用\""
 echo "  4. Associate: Profile -> Wcloud profile -> Override -> check it"
