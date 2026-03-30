@@ -57,16 +57,32 @@ cp "$SCRIPT_DIR/override/loyalsoldier-whitelist-claude.yaml" "$TARGET_DIR/overri
 mv "$TARGET_DIR/override.yaml.tmp" "$TARGET_DIR/override.yaml"
 echo "    installed override: $OVERRIDE_ID.yaml"
 
-# Step 3: Enable Wcloud subscription auto-update (every 6 hours)
-echo "==> Configuring Wcloud subscription auto-update"
+# Step 3: Link override to Wcloud + enable auto-update
+echo "==> Configuring Wcloud subscription"
 if [[ -f "$TARGET_DIR/profile.yaml" ]] && grep -q "name: Wcloud" "$TARGET_DIR/profile.yaml"; then
-    sed -i '' '/name: Wcloud/,/^  - id:/{
-        s/autoUpdate:.*/autoUpdate: true/
-        s/interval:.*/interval: 360/
-    }' "$TARGET_DIR/profile.yaml"
+    awk -v ov_id="$OVERRIDE_ID" '
+        /^    name: Wcloud$/ { in_wcloud = 1 }
+        in_wcloud && /^  - id:/ { in_wcloud = 0 }
+        in_wcloud && /^    override:/ {
+            print "    override:"
+            print "      - " ov_id
+            if ($0 ~ /\[\]$/) next
+            skip_children = 1
+            next
+        }
+        in_wcloud && skip_children {
+            if ($0 ~ /^      - /) next
+            skip_children = 0
+        }
+        in_wcloud && /^    autoUpdate:/ { $0 = "    autoUpdate: true" }
+        in_wcloud && /^    interval:/ { $0 = "    interval: 360" }
+        { print }
+    ' "$TARGET_DIR/profile.yaml" > "$TARGET_DIR/profile.yaml.tmp"
+    mv "$TARGET_DIR/profile.yaml.tmp" "$TARGET_DIR/profile.yaml"
+    echo "    linked override $OVERRIDE_ID to Wcloud"
     echo "    set autoUpdate: true, interval: 360 (every 6 hours)"
 else
-    echo "    skipped: Wcloud subscription not found"
+    echo "    skipped: Wcloud subscription not found (add it first, then re-run)"
 fi
 
 # Done

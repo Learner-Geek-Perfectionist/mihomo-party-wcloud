@@ -79,11 +79,9 @@ cd mihomo-party-wcloud
 
 1. 复制 `config.yaml` 和 `mihomo.yaml` 到 mihomo party 数据目录
 2. 生成随机 ID（或复用已有 ID），注册并复制覆写规则文件
-3. 为 Wcloud 订阅开启自动刷新（每 6 小时）
+3. 将覆写关联到 Wcloud 订阅，并开启自动刷新（每 6 小时）
 
 ### 安装后操作
 
-1. **重启 mihomo party** 加载新配置
-2. **添加 Wcloud 订阅**：配置 -> 导入 -> 粘贴订阅 URL
-3. **启用覆写规则**：覆写 -> 开启「Loyalsoldier白名单 + Claude专用」
-4. **关联到订阅**：配置 -> 选择 Wcloud 配置 -> 覆写 -> 勾选该规则
+1. **首次使用**需先手动添加 Wcloud 订阅：配置 -> 导入 -> 粘贴订阅 URL，然后重新运行 `./install.sh`
+2. **重启 mihomo party** 加载新配置
