@@ -46,6 +46,8 @@ config.yaml（UI 层：主题/语言/侧栏/端口显示）
 ```
 Claude 专用路由（最高优先级）
     ↓
+机场面板走代理（mojie.app 等域名解析到国内 IP，不能走直连）
+    ↓
 Loyalsoldier 规则集（applications → private → reject → icloud → apple → google → proxy → direct → lancidr → cncidr → telegramcidr）
     ↓
 GEOIP 兜底（LAN/CN → DIRECT）
@@ -58,6 +60,11 @@ MATCH → 🚀 节点选择（未匹配的全走代理）
 - 将 `claude.ai`、`anthropic.com`、`cdn.usefathom.com` 路由到美国家宽节点
 - 通过 `Claude专用` 代理组选择节点
 
+### 机场面板代理
+
+- `mojie.app`、`mojie.co`、`mojie.kim`、`mojieai.com` 强制走 `🚀 节点选择`
+- 这些域名解析到中国 IP，会被 `GEOIP,CN,DIRECT` 误匹配为直连导致无法访问
+
 ## 安装
 
 ### 快速安装
@@ -68,18 +75,11 @@ cd mihomo-party-wcloud
 ./install.sh
 ```
 
-### 预览模式（不做任何修改）
-
-```bash
-./install.sh --dry-run
-```
-
 ### 脚本执行内容
 
-1. 备份已有配置到 `~/.mihomo-party-backup-<时间戳>/`
-2. 复制 `config.yaml` 和 `mihomo.yaml` 到 mihomo party 数据目录
-3. 生成随机 ID，注册并复制覆写规则文件
-4. 输出后续操作提示
+1. 复制 `config.yaml` 和 `mihomo.yaml` 到 mihomo party 数据目录
+2. 生成随机 ID（或复用已有 ID），注册并复制覆写规则文件
+3. 为 Wcloud 订阅开启自动刷新（每 6 小时）
 
 ### 安装后操作
 

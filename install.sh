@@ -36,6 +36,7 @@ mkdir -p "$TARGET_DIR/override"
 cp "$SCRIPT_DIR/override/loyalsoldier-whitelist-claude.yaml" "$TARGET_DIR/override/$OVERRIDE_ID.yaml"
 
 # Rebuild override.yaml: our entry first, then preserve others
+# Write to .tmp first to avoid truncating the file before reading it
 {
     echo "items:"
     echo "  - id: $OVERRIDE_ID"
@@ -45,10 +46,15 @@ cp "$SCRIPT_DIR/override/loyalsoldier-whitelist-claude.yaml" "$TARGET_DIR/overri
     echo "    updated: $(date +%s)000"
     # Append other entries (skip ours and the "items:" header)
     if [[ -f "$TARGET_DIR/override.yaml" ]]; then
-        sed -n '/^  - id:/,/^  - id:/{ /name: '"$OVERRIDE_NAME"'/,/^  - id:/d; p; }' \
-            "$TARGET_DIR/override.yaml" || true
+        awk -v skip_name="$OVERRIDE_NAME" '
+            in_block && /^  - id:/ { if (!skip) printf "%s", block; block = $0 "\n"; skip = 0; next }
+            /^  - id:/ { block = $0 "\n"; in_block = 1; skip = 0; next }
+            in_block { block = block $0 "\n"; if (index($0, "name: " skip_name) > 0) skip = 1; next }
+            END { if (in_block && !skip) printf "%s", block }
+        ' "$TARGET_DIR/override.yaml"
     fi
-} > "$TARGET_DIR/override.yaml"
+} > "$TARGET_DIR/override.yaml.tmp"
+mv "$TARGET_DIR/override.yaml.tmp" "$TARGET_DIR/override.yaml"
 echo "    installed override: $OVERRIDE_ID.yaml"
 
 # Step 3: Enable Wcloud subscription auto-update (every 6 hours)
