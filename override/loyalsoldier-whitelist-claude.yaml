@@ -98,6 +98,11 @@ rules:
   - DOMAIN-SUFFIX,anthropic.com,Claude专用
   - DOMAIN-SUFFIX,claude.ai,Claude专用
   - DOMAIN,cdn.usefathom.com,Claude专用
+  # 机场面板走代理（Loyalsoldier direct.txt 误收录了这些域名）
+  - DOMAIN-SUFFIX,mojie.app,🚀 节点选择
+  - DOMAIN-SUFFIX,mojie.co,🚀 节点选择
+  - DOMAIN-SUFFIX,mojie.kim,🚀 节点选择
+  - DOMAIN-SUFFIX,mojieai.com,🚀 节点选择
   # Loyalsoldier 白名单模式
   - RULE-SET,applications,DIRECT
   - RULE-SET,private,DIRECT
