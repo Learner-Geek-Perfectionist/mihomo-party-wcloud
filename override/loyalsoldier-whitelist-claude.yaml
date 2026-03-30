@@ -98,7 +98,7 @@ rules:
   - DOMAIN-SUFFIX,anthropic.com,Claude专用
   - DOMAIN-SUFFIX,claude.ai,Claude专用
   - DOMAIN,cdn.usefathom.com,Claude专用
-  # 机场面板走代理（Loyalsoldier direct.txt 误收录了这些域名）
+  # 机场面板走代理（mojie.app 解析到中国 IP，不能走直连）
   - DOMAIN-SUFFIX,mojie.app,🚀 节点选择
   - DOMAIN-SUFFIX,mojie.co,🚀 节点选择
   - DOMAIN-SUFFIX,mojie.kim,🚀 节点选择
