@@ -67,7 +67,7 @@ test_override_name_match_is_exact() {
 meta: keep-me
 items:
   - id: abcde12345
-    name: Loyalsoldier白名单 + Claude专用 备份
+    name: MetaCubeX GEOSITE + Claude专用 备份
     type: local
     ext: yaml
     updated: 1
@@ -78,7 +78,7 @@ YAML
     assert_ruby \
         "override registry keeps substring match separate" \
         "$target_dir/override.yaml" \
-        'items = document.fetch("items"); names = items.map { |entry| entry["name"] }; raise "missing backup entry" unless names.include?("Loyalsoldier白名单 + Claude专用 备份"); raise "missing target entry" unless names.include?("Loyalsoldier白名单 + Claude专用"); raise "meta key dropped" unless document["meta"] == "keep-me"; target = items.find { |entry| entry["name"] == "Loyalsoldier白名单 + Claude专用" }; raise "wrong ID reused" if target["id"] == "abcde12345"'
+        'items = document.fetch("items"); names = items.map { |entry| entry["name"] }; raise "missing backup entry" unless names.include?("MetaCubeX GEOSITE + Claude专用 备份"); raise "missing target entry" unless names.include?("MetaCubeX GEOSITE + Claude专用"); raise "meta key dropped" unless document["meta"] == "keep-me"; target = items.find { |entry| entry["name"] == "MetaCubeX GEOSITE + Claude专用" }; raise "wrong ID reused" if target["id"] == "abcde12345"'
 }
 
 test_duplicate_overrides_are_normalized_and_idempotent() {
@@ -87,7 +87,7 @@ test_duplicate_overrides_are_normalized_and_idempotent() {
     cat <<'YAML' > "$target_dir/override.yaml"
 items:
   - id: 11111
-    name: Loyalsoldier白名单 + Claude专用
+    name: MetaCubeX GEOSITE + Claude专用
     type: local
     ext: yaml
     updated: 1
@@ -104,7 +104,7 @@ YAML
     assert_ruby \
         "duplicate overrides collapse to one stable entry" \
         "$target_dir/override.yaml" \
-        'items = document.fetch("items"); matches = items.select { |entry| entry["name"] == "Loyalsoldier白名单 + Claude专用" }; raise "expected exactly one target entry" unless matches.size == 1; raise "expected stable first ID" unless matches.first["id"] == "11111"'
+        'items = document.fetch("items"); matches = items.select { |entry| entry["name"] == "MetaCubeX GEOSITE + Claude专用" }; raise "expected exactly one target entry" unless matches.size == 1; raise "expected stable first ID" unless matches.first["id"] == "11111"'
 
     if [[ ! -f "$target_dir/override/11111.yaml" ]]; then
         echo "FAIL: override file was not copied with normalized ID" >&2
