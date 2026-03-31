@@ -56,7 +56,7 @@ app_control_enabled() {
             return 1
             ;;
         auto)
-            [[ "$TARGET_DIR" == "$DEFAULT_TARGET_DIR" ]]
+            [[ "${TARGET_DIR%/}" == "${DEFAULT_TARGET_DIR%/}" ]]
             return
             ;;
         *)
@@ -68,6 +68,10 @@ app_control_enabled() {
 
 app_is_running() {
     pgrep -x "$APP_NAME" >/dev/null 2>&1 || pgrep -f "$APP_PROCESS_MATCH" >/dev/null 2>&1
+}
+
+app_is_ready() {
+    pgrep -x "$APP_NAME" >/dev/null 2>&1 && pgrep -f "$APP_PROCESS_MATCH" >/dev/null 2>&1
 }
 
 stop_app_if_running() {
@@ -115,7 +119,7 @@ restart_app_if_needed() {
     open -a "$APP_NAME"
 
     for _ in $(seq 1 45); do
-        if app_is_running; then
+        if app_is_ready; then
             log_step "restarted $APP_NAME"
             return 0
         fi
@@ -157,9 +161,7 @@ if [[ ! -d "$TARGET_DIR" ]]; then
     exit 1
 fi
 
-stop_app_if_running
-
-echo "==> Installing config files"
+echo "==> Staging config files"
 STAGE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/mihomo-party-install.XXXXXX")"
 mkdir -p "$STAGE_DIR/override"
 cp "$SCRIPT_DIR/config.yaml" "$STAGE_DIR/config.yaml"
@@ -172,6 +174,10 @@ OVERRIDE_ID="$(printf '%s\n' "$SYNC_OUTPUT" | sed -n '1p')"
 PROFILE_STATUS="$(printf '%s\n' "$SYNC_OUTPUT" | sed -n '2p')"
 
 cp "$OVERRIDE_SOURCE" "$STAGE_DIR/override/$OVERRIDE_ID.yaml"
+
+stop_app_if_running
+
+echo "==> Installing to target"
 mkdir -p "$TARGET_DIR/override"
 copy_atomically "$STAGE_DIR/config.yaml" "$TARGET_DIR/config.yaml"
 copy_atomically "$STAGE_DIR/mihomo.yaml" "$TARGET_DIR/mihomo.yaml"
