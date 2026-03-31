@@ -35,6 +35,10 @@ run_install_with_env() {
     env "$@" TARGET_DIR="$target_dir" "$INSTALL_SCRIPT" >/dev/null
 }
 
+run_script_with_env() {
+    env "$@" "$INSTALL_SCRIPT" >/dev/null
+}
+
 fixture_dir() {
     local dir
     dir="$(mktemp -d)"
@@ -319,6 +323,120 @@ SH
     echo "ok: auto mode restarts a live session for the default target dir"
 }
 
+test_linux_default_target_dir_uses_xdg_config_home() {
+    local home_dir xdg_dir target_dir fakebin
+    home_dir="$(fixture_dir)"
+    xdg_dir="$(fixture_dir)"
+    target_dir="$xdg_dir/mihomo-party"
+    fakebin="$(mktemp -d)"
+
+    mkdir -p "$target_dir"
+    cat <<'YAML' > "$target_dir/profile.yaml"
+items:
+  - id: foo
+    name: Wcloud
+    type: remote
+YAML
+
+    cat <<'SH' > "$fakebin/uname"
+#!/bin/sh
+echo Linux
+SH
+
+    chmod +x "$fakebin/uname"
+
+    run_script_with_env \
+        HOME="$home_dir" \
+        XDG_CONFIG_HOME="$xdg_dir" \
+        APP_CONTROL_MODE=never \
+        PATH="$fakebin:/usr/bin:/bin:/usr/sbin:/sbin"
+
+    if [[ ! -f "$target_dir/config.yaml" || ! -f "$target_dir/mihomo.yaml" || ! -f "$target_dir/override.yaml" ]]; then
+        echo "FAIL: linux install should write to XDG config target dir" >&2
+        exit 1
+    fi
+
+    assert_ruby \
+        "linux default target dir updates Wcloud under XDG config home" \
+        "$target_dir/profile.yaml" \
+        'item = document.fetch("items").find { |entry| entry["name"] == "Wcloud" } or raise "missing Wcloud"; raise "override not set" unless item["override"].is_a?(Array) && item["override"].size == 1'
+}
+
+test_linux_auto_mode_restarts_live_session() {
+    local home_dir target_dir fakebin state_dir
+    home_dir="$(fixture_dir)"
+    target_dir="$home_dir/.config/mihomo-party"
+    fakebin="$(mktemp -d)"
+    state_dir="$(mktemp -d)"
+
+    mkdir -p "$target_dir"
+    cat <<'YAML' > "$target_dir/profile.yaml"
+items:
+  - id: foo
+    name: Wcloud
+    type: remote
+YAML
+
+    : > "$state_dir/running"
+
+    cat <<'SH' > "$fakebin/uname"
+#!/bin/sh
+echo Linux
+SH
+
+    cat <<'SH' > "$fakebin/pgrep"
+#!/bin/sh
+state_dir="${TEST_STATE_DIR:?}"
+if [ -f "$state_dir/running" ]; then
+  echo 12345
+  exit 0
+fi
+exit 1
+SH
+
+    cat <<'SH' > "$fakebin/pkill"
+#!/bin/sh
+state_dir="${TEST_STATE_DIR:?}"
+echo pkill >> "$state_dir/log"
+rm -f "$state_dir/running"
+SH
+
+    cat <<'SH' > "$fakebin/nohup"
+#!/bin/sh
+state_dir="${TEST_STATE_DIR:?}"
+echo nohup >> "$state_dir/log"
+"$@"
+SH
+
+    cat <<'SH' > "$fakebin/mihomo-party"
+#!/bin/sh
+state_dir="${TEST_STATE_DIR:?}"
+echo mihomo-party >> "$state_dir/log"
+touch "$state_dir/running"
+SH
+
+    chmod +x "$fakebin/uname" "$fakebin/pgrep" "$fakebin/pkill" "$fakebin/nohup" "$fakebin/mihomo-party"
+
+    run_script_with_env \
+        HOME="$home_dir" \
+        XDG_CONFIG_HOME= \
+        APP_CONTROL_MODE=auto \
+        TEST_STATE_DIR="$state_dir" \
+        PATH="$fakebin:/usr/bin:/bin:/usr/sbin:/sbin"
+
+    if [[ "$(tr '\n' ' ' < "$state_dir/log")" != "pkill nohup mihomo-party " ]]; then
+        echo "FAIL: linux auto mode should stop then relaunch mihomo-party" >&2
+        cat "$state_dir/log" >&2
+        exit 1
+    fi
+
+    if [[ ! -f "$state_dir/running" ]]; then
+        echo "FAIL: linux auto mode should leave mihomo-party running after restart" >&2
+        exit 1
+    fi
+    echo "ok: linux auto mode restarts a live session for the default target dir"
+}
+
 test_missing_profile_fields_are_created
 test_override_name_match_is_exact
 test_duplicate_overrides_are_normalized_and_idempotent
@@ -328,3 +446,5 @@ test_invalid_override_is_noop
 test_broken_ruby_fails_before_writing
 test_running_app_is_stopped_and_restarted
 test_auto_mode_restarts_live_session
+test_linux_default_target_dir_uses_xdg_config_home
+test_linux_auto_mode_restarts_live_session

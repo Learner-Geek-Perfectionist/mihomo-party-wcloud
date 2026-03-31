@@ -6,17 +6,45 @@ if [[ -n "${TARGET_DIR:-}" ]]; then
     TARGET_DIR_WAS_SET=true
 fi
 
-TARGET_DIR="${TARGET_DIR:-$HOME/Library/Application Support/mihomo-party}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 OVERRIDE_NAME="MetaCubeX GEOSITE + Claude专用"
 OVERRIDE_SOURCE="$SCRIPT_DIR/override/geosite-whitelist-claude.yaml"
 STATE_SCRIPT="$SCRIPT_DIR/sync_install_state.rb"
 STAGE_DIR=""
-DEFAULT_TARGET_DIR="${DEFAULT_TARGET_DIR:-$HOME/Library/Application Support/mihomo-party}"
 APP_CONTROL_MODE="${APP_CONTROL_MODE:-auto}"
-APP_NAME="Clash Party"
-APP_PROCESS_MATCH="/Applications/Clash Party.app/Contents/Resources/sidecar/mihomo"
 APP_WAS_RUNNING=false
+
+HOST_OS="$(uname -s)"
+APP_LAUNCH_CMD="${APP_LAUNCH_CMD:-}"
+APP_SUPPORTS_CONTROL=false
+case "$HOST_OS" in
+    Darwin)
+        _DEFAULT_DIR="$HOME/Library/Application Support/mihomo-party"
+        APP_SUPPORTS_CONTROL=true
+        APP_NAME="${APP_NAME:-Clash Party}"
+        APP_PROCESS_MATCH="${APP_PROCESS_MATCH:-/Applications/Clash Party.app/Contents/Resources/sidecar/mihomo}"
+        ;;
+    Linux)
+        _DEFAULT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/mihomo-party"
+        APP_SUPPORTS_CONTROL=true
+        APP_NAME="${APP_NAME:-mihomo-party}"
+        APP_PROCESS_MATCH="${APP_PROCESS_MATCH:-}"
+        APP_LAUNCH_CMD="${APP_LAUNCH_CMD:-mihomo-party}"
+        ;;
+    *)
+        if [[ -z "${TARGET_DIR:-}" ]]; then
+            echo "Error: install.sh currently supports macOS and Linux only." >&2
+            echo "Set TARGET_DIR manually if you are running tests against a fixture directory." >&2
+            exit 1
+        fi
+        _DEFAULT_DIR=""
+        APP_NAME="${APP_NAME:-mihomo-party}"
+        APP_PROCESS_MATCH="${APP_PROCESS_MATCH:-}"
+        ;;
+esac
+
+TARGET_DIR="${TARGET_DIR:-$_DEFAULT_DIR}"
+DEFAULT_TARGET_DIR="${DEFAULT_TARGET_DIR:-$_DEFAULT_DIR}"
 STYLE_RESET=""
 STYLE_BOLD=""
 COLOR_STEP=""
@@ -124,6 +152,10 @@ cleanup() {
 trap cleanup EXIT
 
 app_control_enabled() {
+    if [[ "$APP_SUPPORTS_CONTROL" != "true" ]]; then
+        return 1
+    fi
+
     case "$APP_CONTROL_MODE" in
         always)
             return 0
@@ -142,12 +174,28 @@ app_control_enabled() {
     esac
 }
 
+app_matches_process() {
+    if [[ -z "$APP_PROCESS_MATCH" ]]; then
+        return 1
+    fi
+
+    pgrep -f "$APP_PROCESS_MATCH" >/dev/null 2>&1
+}
+
 app_is_running() {
-    pgrep -x "$APP_NAME" >/dev/null 2>&1 || pgrep -f "$APP_PROCESS_MATCH" >/dev/null 2>&1
+    pgrep -x "$APP_NAME" >/dev/null 2>&1 || app_matches_process
 }
 
 app_is_ready() {
-    pgrep -x "$APP_NAME" >/dev/null 2>&1 && pgrep -f "$APP_PROCESS_MATCH" >/dev/null 2>&1
+    if ! pgrep -x "$APP_NAME" >/dev/null 2>&1; then
+        return 1
+    fi
+
+    if [[ -z "$APP_PROCESS_MATCH" ]]; then
+        return 0
+    fi
+
+    app_matches_process
 }
 
 stop_app_if_running() {
@@ -160,8 +208,15 @@ stop_app_if_running() {
     fi
 
     APP_WAS_RUNNING=true
-    log_section "Stopping Clash Party"
-    osascript -e "tell application \"$APP_NAME\" to quit" >/dev/null 2>&1 || true
+    log_section "Stopping $APP_NAME"
+    case "$HOST_OS" in
+        Darwin)
+            osascript -e "tell application \"$APP_NAME\" to quit" >/dev/null 2>&1 || true
+            ;;
+        Linux)
+            pkill -TERM -x "$APP_NAME" >/dev/null 2>&1 || true
+            ;;
+    esac
 
     for _ in $(seq 1 30); do
         if ! app_is_running; then
@@ -172,7 +227,9 @@ stop_app_if_running() {
     done
 
     pkill -TERM -x "$APP_NAME" >/dev/null 2>&1 || true
-    pkill -TERM -f "$APP_PROCESS_MATCH" >/dev/null 2>&1 || true
+    if [[ -n "$APP_PROCESS_MATCH" ]]; then
+        pkill -TERM -f "$APP_PROCESS_MATCH" >/dev/null 2>&1 || true
+    fi
 
     for _ in $(seq 1 10); do
         if ! app_is_running; then
@@ -191,8 +248,15 @@ restart_app_if_needed() {
         return 0
     fi
 
-    log_section "Restarting Clash Party"
-    open -a "$APP_NAME"
+    log_section "Restarting $APP_NAME"
+    case "$HOST_OS" in
+        Darwin)
+            open -a "$APP_NAME"
+            ;;
+        Linux)
+            nohup "$APP_LAUNCH_CMD" >/dev/null 2>&1 &
+            ;;
+    esac
 
     for _ in $(seq 1 45); do
         if app_is_ready; then
@@ -205,12 +269,6 @@ restart_app_if_needed() {
     echo "Error: failed to restart $APP_NAME after installation." >&2
     exit 1
 }
-
-if [[ "$(uname -s)" != "Darwin" && "$TARGET_DIR_WAS_SET" != "true" ]]; then
-    echo "Error: install.sh currently supports macOS only." >&2
-    echo "Set TARGET_DIR manually if you are running tests against a fixture directory." >&2
-    exit 1
-fi
 
 require_command ruby
 
