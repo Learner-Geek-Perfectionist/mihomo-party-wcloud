@@ -17,8 +17,84 @@ APP_CONTROL_MODE="${APP_CONTROL_MODE:-auto}"
 APP_NAME="Clash Party"
 APP_PROCESS_MATCH="/Applications/Clash Party.app/Contents/Resources/sidecar/mihomo"
 APP_WAS_RUNNING=false
+STYLE_RESET=""
+STYLE_BOLD=""
+COLOR_STEP=""
+COLOR_INFO=""
+COLOR_OK=""
+COLOR_WARN=""
+COLOR_DONE=""
+LOG_SECTION_INDEX=0
+
+if [[ -z "${NO_COLOR:-}" ]]; then
+    STYLE_RESET=$'\033[0m'
+    STYLE_BOLD=$'\033[1m'
+    COLOR_STEP=$'\033[38;5;39m'
+    COLOR_INFO=$'\033[38;5;45m'
+    COLOR_OK=$'\033[38;5;42m'
+    COLOR_WARN=$'\033[38;5;220m'
+    COLOR_DONE=$'\033[38;5;50m'
+fi
+
+log_section() {
+    local title="$1"
+
+    LOG_SECTION_INDEX=$((LOG_SECTION_INDEX + 1))
+    if (( LOG_SECTION_INDEX > 1 )); then
+        printf '\n'
+    fi
+
+    printf '%b[%02d]%b %b%s%b\n' \
+        "${COLOR_STEP}${STYLE_BOLD}" \
+        "$LOG_SECTION_INDEX" \
+        "$STYLE_RESET" \
+        "$STYLE_BOLD" \
+        "$title" \
+        "$STYLE_RESET"
+}
+
 log_step() {
-    echo "    $*"
+    local label="$1"
+    shift
+
+    printf '     %b%-12s%b %s\n' \
+        "${COLOR_INFO}${STYLE_BOLD}" \
+        "$label" \
+        "$STYLE_RESET" \
+        "$*"
+}
+
+log_success() {
+    local label="$1"
+    shift
+
+    printf '     %b%-12s%b %s\n' \
+        "${COLOR_OK}${STYLE_BOLD}" \
+        "$label" \
+        "$STYLE_RESET" \
+        "$*"
+}
+
+log_warn() {
+    local label="$1"
+    shift
+
+    printf '     %b%-12s%b %s\n' \
+        "${COLOR_WARN}${STYLE_BOLD}" \
+        "$label" \
+        "$STYLE_RESET" \
+        "$*"
+}
+
+log_done() {
+    local message="$1"
+
+    printf '\n%b[done]%b %b%s%b\n' \
+        "${COLOR_DONE}${STYLE_BOLD}" \
+        "$STYLE_RESET" \
+        "$STYLE_BOLD" \
+        "$message" \
+        "$STYLE_RESET"
 }
 
 require_command() {
@@ -84,12 +160,12 @@ stop_app_if_running() {
     fi
 
     APP_WAS_RUNNING=true
-    echo "==> Stopping Clash Party"
+    log_section "Stopping Clash Party"
     osascript -e "tell application \"$APP_NAME\" to quit" >/dev/null 2>&1 || true
 
     for _ in $(seq 1 30); do
         if ! app_is_running; then
-            log_step "stopped $APP_NAME"
+            log_success "status" "stopped $APP_NAME"
             return 0
         fi
         sleep 1
@@ -100,7 +176,7 @@ stop_app_if_running() {
 
     for _ in $(seq 1 10); do
         if ! app_is_running; then
-            log_step "stopped $APP_NAME after TERM"
+            log_success "status" "stopped $APP_NAME after TERM"
             return 0
         fi
         sleep 1
@@ -115,12 +191,12 @@ restart_app_if_needed() {
         return 0
     fi
 
-    echo "==> Restarting Clash Party"
+    log_section "Restarting Clash Party"
     open -a "$APP_NAME"
 
     for _ in $(seq 1 45); do
         if app_is_ready; then
-            log_step "restarted $APP_NAME"
+            log_success "status" "restarted $APP_NAME"
             return 0
         fi
         sleep 1
@@ -161,23 +237,25 @@ if [[ ! -d "$TARGET_DIR" ]]; then
     exit 1
 fi
 
-echo "==> Staging config files"
+log_section "Staging config files"
 STAGE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/mihomo-party-install.XXXXXX")"
 mkdir -p "$STAGE_DIR/override"
 cp "$SCRIPT_DIR/config.yaml" "$STAGE_DIR/config.yaml"
 cp "$SCRIPT_DIR/mihomo.yaml" "$STAGE_DIR/mihomo.yaml"
-log_step "staged: config.yaml, mihomo.yaml"
+log_success "staged" "config.yaml, mihomo.yaml"
 
-echo "==> Installing override rule"
+log_section "Installing override rule"
 SYNC_OUTPUT="$(ruby "$STATE_SCRIPT" "$TARGET_DIR" "$STAGE_DIR" "$OVERRIDE_NAME")"
 OVERRIDE_ID="$(printf '%s\n' "$SYNC_OUTPUT" | sed -n '1p')"
 PROFILE_STATUS="$(printf '%s\n' "$SYNC_OUTPUT" | sed -n '2p')"
 
 cp "$OVERRIDE_SOURCE" "$STAGE_DIR/override/$OVERRIDE_ID.yaml"
+log_step "override" "$OVERRIDE_NAME"
+log_success "file" "$OVERRIDE_ID.yaml"
 
 stop_app_if_running
 
-echo "==> Installing to target"
+log_section "Installing to target"
 mkdir -p "$TARGET_DIR/override"
 copy_atomically "$STAGE_DIR/config.yaml" "$TARGET_DIR/config.yaml"
 copy_atomically "$STAGE_DIR/mihomo.yaml" "$TARGET_DIR/mihomo.yaml"
@@ -186,22 +264,21 @@ copy_atomically "$STAGE_DIR/override.yaml" "$TARGET_DIR/override.yaml"
 if [[ "$PROFILE_STATUS" == "updated" ]]; then
     copy_atomically "$STAGE_DIR/profile.yaml" "$TARGET_DIR/profile.yaml"
 fi
-log_step "installed: config.yaml, mihomo.yaml"
-log_step "installed override: $OVERRIDE_ID.yaml"
+log_success "installed" "config.yaml, mihomo.yaml"
+log_success "override" "$OVERRIDE_ID.yaml"
 
-echo "==> Configuring Wcloud subscription"
+log_section "Configuring Wcloud subscription"
 if [[ "$PROFILE_STATUS" == "updated" ]]; then
-    echo "    linked override $OVERRIDE_ID to Wcloud"
-    echo "    set autoUpdate: true, interval: 360 (every 6 hours)"
+    log_success "linked" "override $OVERRIDE_ID to Wcloud"
+    log_success "auto-update" "enabled, every 6 hours"
 else
-    echo "    skipped: Wcloud subscription not found (add it first, then re-run)"
+    log_warn "skipped" "Wcloud subscription not found (add it first, then re-run)"
 fi
 
 restart_app_if_needed
 
-echo
 if [[ "$APP_WAS_RUNNING" == "true" ]]; then
-    echo "==> Done! Clash Party has been restarted."
+    log_done "$APP_NAME has been restarted and changes are active."
 else
-    echo "==> Done! Restart Clash Party if you want to apply changes immediately."
+    log_done "Restart $APP_NAME to apply changes immediately."
 fi
