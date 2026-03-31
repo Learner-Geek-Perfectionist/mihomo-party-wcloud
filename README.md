@@ -2,6 +2,12 @@
 
 Wcloud 订阅的 mihomo party 配置备份，方便在其他 macOS 设备上快速部署。
 
+默认安全策略：
+
+- 代理端口默认对局域网开放，方便局域网设备共用代理
+- `SubStore` 仍仅绑定 `127.0.0.1`
+- 如果网络环境不可信，请手动收紧 `mihomo.yaml` 的监听范围并启用认证
+
 ## 文件说明
 
 | 文件 | 说明 |
@@ -75,11 +81,24 @@ cd mihomo-party-wcloud
 ./install.sh
 ```
 
+如需对测试目录或非默认数据目录执行安装，可显式指定：
+
+```bash
+TARGET_DIR="/path/to/mihomo-party" ./install.sh
+```
+
 ### 脚本执行内容
 
-1. 复制 `config.yaml` 和 `mihomo.yaml` 到 mihomo party 数据目录
-2. 生成随机 ID（或复用已有 ID），注册并复制覆写规则文件
-3. 将覆写关联到 Wcloud 订阅，并开启自动刷新（每 6 小时）
+1. 如果 `Clash Party` 正在运行，脚本会按“先停应用，再写配置”的顺序执行，避免退出时把旧内存状态写回配置文件
+2. 复制 `config.yaml` 和 `mihomo.yaml` 到 mihomo party 数据目录
+3. 生成随机 ID（或复用已有 ID），注册并复制覆写规则文件
+4. 将覆写关联到 Wcloud 订阅，并开启自动刷新（每 6 小时）
+5. 如果安装前应用正在运行，脚本会自动重启它
+
+默认情况下，脚本会在发现默认数据目录上的 `Clash Party` 正在运行时自动停启。你可以：
+
+- 直接运行 `./install.sh`，让脚本自动停启应用
+- 或显式关闭应用控制：`APP_CONTROL_MODE=never ./install.sh`
 
 ### 安装后操作
 

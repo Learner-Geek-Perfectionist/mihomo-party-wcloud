@@ -58,7 +58,8 @@ enableRedirPort: false
 showTproxyPort: 0
 enableTproxyPort: false
 testProfileOnStart: true
-subStoreHost: 0.0.0.0
+# Keep SubStore bound to localhost unless you explicitly need remote access.
+subStoreHost: 127.0.0.1
 showFloatingWindow: false
 disableTray: false
 profileDisplayDate: update
