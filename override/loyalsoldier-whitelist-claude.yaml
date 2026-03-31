@@ -1,6 +1,6 @@
 # ============================================================
-# mihomo-party 覆写：Loyalsoldier 白名单模式 + Claude 专用
-# 数据源：https://github.com/Loyalsoldier/clash-rules
+# mihomo-party 覆写：MetaCubeX GEOSITE 白名单模式 + Claude 专用
+# 数据源：geosite.dat (MetaCubeX/meta-rules-dat)
 # ============================================================
 
 # 添加 Claude 专用代理组（合并到订阅已有的代理组中）
@@ -11,86 +11,7 @@
     filter: "美国家宽"
     icon: "https://claude.ai/favicon.ico"
 
-# 完整替换 rule-providers（Loyalsoldier/clash-rules）
-rule-providers:
-  reject:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt"
-    path: ./ruleset/reject.yaml
-    interval: 86400
-  icloud:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/icloud.txt"
-    path: ./ruleset/icloud.yaml
-    interval: 86400
-  apple:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/apple.txt"
-    path: ./ruleset/apple.yaml
-    interval: 86400
-  google:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/google.txt"
-    path: ./ruleset/google.yaml
-    interval: 86400
-  proxy:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt"
-    path: ./ruleset/proxy.yaml
-    interval: 86400
-  direct:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt"
-    path: ./ruleset/direct.yaml
-    interval: 86400
-  private:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/private.txt"
-    path: ./ruleset/private.yaml
-    interval: 86400
-  gfw:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt"
-    path: ./ruleset/gfw.yaml
-    interval: 86400
-  tld-not-cn:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/tld-not-cn.txt"
-    path: ./ruleset/tld-not-cn.yaml
-    interval: 86400
-  telegramcidr:
-    type: http
-    behavior: ipcidr
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt"
-    path: ./ruleset/telegramcidr.yaml
-    interval: 86400
-  cncidr:
-    type: http
-    behavior: ipcidr
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt"
-    path: ./ruleset/cncidr.yaml
-    interval: 86400
-  lancidr:
-    type: http
-    behavior: ipcidr
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt"
-    path: ./ruleset/lancidr.yaml
-    interval: 86400
-  applications:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/applications.txt"
-    path: ./ruleset/applications.yaml
-    interval: 86400
+rule-providers: {}
 
 # 完整替换规则（白名单模式）
 rules:
@@ -98,23 +19,53 @@ rules:
   - DOMAIN-SUFFIX,anthropic.com,Claude专用
   - DOMAIN-SUFFIX,claude.ai,Claude专用
   - DOMAIN,cdn.usefathom.com,Claude专用
+
+  # Copilot 显式入口（不在 geosite:bing 内）
+  - DOMAIN,api.msn.com,💬 人工智能
+  - DOMAIN,assets.msn.com,💬 人工智能
+  - DOMAIN,gateway.bingviz.microsoft.net,💬 人工智能
+  - DOMAIN,gateway.bingviz.microsoftapp.net,💬 人工智能
+
   # 机场面板走代理（mojie.app 解析到中国 IP，不能走直连）
   - DOMAIN-SUFFIX,mojie.app,🚀 节点选择
   - DOMAIN-SUFFIX,mojie.co,🚀 节点选择
   - DOMAIN-SUFFIX,mojie.kim,🚀 节点选择
   - DOMAIN-SUFFIX,mojieai.com,🚀 节点选择
-  # Loyalsoldier 白名单模式
-  - RULE-SET,applications,DIRECT
-  - RULE-SET,private,DIRECT
-  - RULE-SET,reject,REJECT
-  - RULE-SET,icloud,DIRECT
-  - RULE-SET,apple,DIRECT
-  - RULE-SET,google,🚀 节点选择
-  - RULE-SET,proxy,🚀 节点选择
-  - RULE-SET,direct,DIRECT
-  - RULE-SET,lancidr,DIRECT
-  - RULE-SET,cncidr,DIRECT
-  - RULE-SET,telegramcidr,🚀 节点选择
-  - GEOIP,LAN,DIRECT
+
+  # 广告 / 私有网络
+  - GEOSITE,category-ads-all,REJECT
+  - GEOSITE,private,DIRECT
+
+  # Bing 搜索走直连，剩余 Bing/Copilot 流量走 AI 组
+  - GEOSITE,bing@cn,DIRECT
+  - DOMAIN,bing.com,DIRECT
+  - DOMAIN,www.bing.com,DIRECT
+  - DOMAIN,www2.bing.com,DIRECT
+  - GEOSITE,bing,💬 人工智能
+
+  # 国际服务的中国区子集走直连
+  - GEOSITE,apple-cn,DIRECT
+  - GEOSITE,icloud@cn,DIRECT
+  - GEOSITE,google@cn,DIRECT
+  - GEOSITE,microsoft@cn,DIRECT
+  - GEOSITE,steam@cn,DIRECT
+  - GEOSITE,category-games@cn,DIRECT
+
+  # 需要代理的国际服务
+  - GEOSITE,youtube,🚀 节点选择
+  - GEOSITE,google,🚀 节点选择
+  - GEOSITE,github,🚀 节点选择
+  - GEOSITE,telegram,🚀 节点选择
+  - GEOSITE,twitter,🚀 节点选择
+  - GEOSITE,category-scholar-!cn,🚀 节点选择
+
+  # 兜底分流
+  - GEOSITE,geolocation-!cn,🚀 节点选择
+  - GEOSITE,cn,DIRECT
+
+  # IP 规则
+  - GEOIP,private,DIRECT,no-resolve
+  - GEOIP,telegram,🚀 节点选择,no-resolve
   - GEOIP,CN,DIRECT
+
   - MATCH,🚀 节点选择

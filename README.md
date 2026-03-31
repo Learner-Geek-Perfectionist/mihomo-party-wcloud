@@ -14,7 +14,7 @@ Wcloud 订阅的 mihomo party 配置备份，方便在其他 macOS 设备上快�
 |------|------|
 | `config.yaml` | mihomo party 应用设置（主题、语言、侧栏顺序、端口显示等） |
 | `mihomo.yaml` | mihomo 核心配置（TUN、DNS、sniffer、geo 数据源等） |
-| `override/loyalsoldier-whitelist-claude.yaml` | 覆写规则：Loyalsoldier 白名单模式 + Claude 专用路由 |
+| `override/loyalsoldier-whitelist-claude.yaml` | 覆写规则：MetaCubeX GEOSITE 白名单模式 + Claude 专用路由 |
 
 **不包含**：`profile.yaml`（含订阅 token）、`profiles/`（订阅缓存数据）。
 
@@ -41,22 +41,39 @@ config.yaml（UI 层：主题/语言/侧栏/端口显示）
 
 ## 覆写规则详情
 
-覆写文件使用 [Loyalsoldier/clash-rules](https://github.com/Loyalsoldier/clash-rules)（25k+ stars）的**白名单模式**完整替换 Wcloud 订阅自带的分流规则。规则数据每天自动构建，来源于 v2fly/domain-list-community、GFWList、dnsmasq-china-list 等社区项目。
+覆写文件使用 [MetaCubeX/meta-rules-dat](https://github.com/MetaCubeX/meta-rules-dat) 提供的 `geosite.dat` 做**白名单模式**分流，完整替换 Wcloud 订阅自带的规则体系。
+
+与旧版 `rule-providers` 方案相比，这一版的核心变化是：
+
+- 覆写内直接使用 `GEOSITE` / `GEOIP`，不再依赖额外的外部规则文件下载
+- 不再混用 `proxy` 与 `direct` 两套域名列表，避免 `bing.com` 一类域名出现重叠命中和优先级冲突
+
+`geosite.dat` 的更新由 mihomo 自己负责，来源配置见 `mihomo.yaml` 中的 `geox-url.geosite` 与 `geo-auto-update`。
 
 ### 白名单模式
 
-白名单模式 = 明确匹配到的国内流量走直连，**其余全部走代理**。相比 Wcloud 原有的黑名单模式（只代理明确列出的域名），不会出现国外网站因 GEOIP 误判而走直连的问题。
+白名单模式 = 明确匹配到的国内流量、中国区子集、私有网络走直连，**其余默认走代理**。相比 Wcloud 原有的黑名单模式（只代理明确列出的域名），不会出现国外网站因 GEOIP 误判而走直连的问题。
 
 ### 规则匹配链
 
-```
+```text
 Claude 专用路由（最高优先级）
+    ↓
+Copilot 显式入口（api.msn.com / gateway.bingviz.* → 💬 人工智能）
     ↓
 机场面板走代理（mojie.app 等域名解析到国内 IP，不能走直连）
     ↓
-Loyalsoldier 规则集（applications → private → reject → icloud → apple → google → proxy → direct → lancidr → cncidr → telegramcidr）
+Bing 搜索直连（bing@cn + www.bing.com / www2.bing.com）
     ↓
-GEOIP 兜底（LAN/CN → DIRECT）
+其余 Bing / Copilot 走 💬 人工智能
+    ↓
+中国区子集直连（apple-cn / icloud@cn / google@cn / microsoft@cn / steam@cn / category-games@cn）
+    ↓
+国际服务代理（youtube / google / github / telegram / twitter / scholar）
+    ↓
+GEOSITE 兜底（geolocation-!cn → 代理，cn → 直连）
+    ↓
+GEOIP 兜底（private / telegram / CN）
     ↓
 MATCH → 🚀 节点选择（未匹配的全走代理）
 ```
@@ -66,10 +83,26 @@ MATCH → 🚀 节点选择（未匹配的全走代理）
 - 将 `claude.ai`、`anthropic.com`、`cdn.usefathom.com` 路由到美国家宽节点
 - 通过 `Claude专用` 代理组选择节点
 
+### Bing / Copilot 分流
+
+- `www.bing.com`、`www2.bing.com` 和 `bing@cn` 中国区子集走 `DIRECT`
+- 其余 `geosite:bing` 流量走 `💬 人工智能`
+- `api.msn.com`、`assets.msn.com`、`gateway.bingviz.microsoft.net`、`gateway.bingviz.microsoftapp.net` 作为 Copilot 显式入口，直接送入 `💬 人工智能`
+
+这样可以同时满足两件事：
+
+- Safari / 浏览器访问 Bing 搜索页保持直连，避免被慢节点拖累
+- `copilot.microsoft.com` 及其相关依赖仍保留代理能力，不会被“一刀切”到直连
+
+### 中国区子集直连
+
+- 使用 `apple-cn`、`icloud@cn`、`google@cn`、`microsoft@cn`、`steam@cn`、`category-games@cn`
+- 这比旧版 `DOMAIN-KEYWORD,microsoft`、`officecdn` 一类的粗粒度规则更稳，避免把 OneDrive、Azure、Office 国际域名整体误放行到 `DIRECT`
+
 ### 机场面板代理
 
 - `mojie.app`、`mojie.co`、`mojie.kim`、`mojieai.com` 强制走 `🚀 节点选择`
-- 这些域名解析到中国 IP，会被 `GEOIP,CN,DIRECT` 误匹配为直连导致无法访问
+- 这些域名解析到中国 IP，会被 `GEOSITE,cn` / `GEOIP,CN,DIRECT` 误判为直连导致无法访问
 
 ## 安装
 
@@ -85,6 +118,32 @@ cd mihomo-party-wcloud
 
 ```bash
 TARGET_DIR="/path/to/mihomo-party" ./install.sh
+```
+
+脚本默认使用 ANSI 彩色输出，便于区分步骤、成功状态和跳过项。如需关闭颜色，可使用：
+
+```bash
+NO_COLOR=1 ./install.sh
+```
+
+示例输出：
+
+```text
+[01] Staging config files
+     staged       config.yaml, mihomo.yaml
+
+[02] Installing override rule
+     override     MetaCubeX GEOSITE + Claude专用
+     file         aae3735c27.yaml
+
+[03] Installing to target
+     installed    config.yaml, mihomo.yaml
+     override     aae3735c27.yaml
+
+[04] Configuring Wcloud subscription
+     skipped      Wcloud subscription not found (add it first, then re-run)
+
+[done] Restart Clash Party to apply changes immediately.
 ```
 
 ### 脚本执行内容

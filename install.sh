@@ -8,7 +8,7 @@ fi
 
 TARGET_DIR="${TARGET_DIR:-$HOME/Library/Application Support/mihomo-party}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-OVERRIDE_NAME="Loyalsoldier白名单 + Claude专用"
+OVERRIDE_NAME="MetaCubeX GEOSITE + Claude专用"
 OVERRIDE_SOURCE="$SCRIPT_DIR/override/loyalsoldier-whitelist-claude.yaml"
 STATE_SCRIPT="$SCRIPT_DIR/sync_install_state.rb"
 STAGE_DIR=""
