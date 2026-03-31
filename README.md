@@ -14,7 +14,7 @@ Wcloud 订阅的 mihomo party 配置备份，方便在其他 macOS 设备上快�
 |------|------|
 | `config.yaml` | mihomo party 应用设置（主题、语言、侧栏顺序、端口显示等） |
 | `mihomo.yaml` | mihomo 核心配置（TUN、DNS、sniffer、geo 数据源等） |
-| `override/loyalsoldier-whitelist-claude.yaml` | 覆写规则：MetaCubeX GEOSITE 白名单模式 + Claude 专用路由 |
+| `override/geosite-whitelist-claude.yaml` | 覆写规则：MetaCubeX GEOSITE 白名单模式 + Claude 专用路由 |
 
 **不包含**：`profile.yaml`（含订阅 token）、`profiles/`（订阅缓存数据）。
 
