@@ -62,6 +62,7 @@ if File.exist?(SOURCE_PROFILE_PATH)
 
     updated_item = item.dup
     updated_item["override"] = [override_id]
+    updated_item["allowFixedInterval"] = true
     updated_item["autoUpdate"] = true
     updated_item["interval"] = 60
     profile_status = "updated"

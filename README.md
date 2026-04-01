@@ -6,7 +6,7 @@
 
 - 一键安装 `config.yaml`、`mihomo.yaml` 和本地 override
 - 自动为名为 `Wcloud` 的订阅挂载覆写规则
-- 自动把 `Wcloud` 订阅设置为每 1 小时刷新一次
+- 自动把 `Wcloud` 订阅设置为固定每 1 小时刷新一次
 - 安装前后按需停启 `Clash Party`，避免运行中的旧状态把新配置覆盖回去
 - 基于 [MetaCubeX](https://github.com/MetaCubeX) `geosite.dat` 的白名单分流规则，并单独给 Claude 预留代理组
 
@@ -70,7 +70,7 @@ TARGET_DIR="/path/to/mihomo-party" ./install.sh
 2. 把 `config.yaml`、`mihomo.yaml` 和 override 文件先复制到临时 staging 目录。
 3. 读取目标目录里的 `override.yaml` / `profile.yaml`，生成或复用 override ID。
 4. 向 `override.yaml` 注册 `MetaCubeX GEOSITE + Claude专用` 这条本地覆写。
-5. 如果找到了名为 `Wcloud` 的订阅，就把它的 `override`、`autoUpdate` 和 `interval` 自动补齐。
+5. 如果找到了名为 `Wcloud` 的订阅，就把它的 `override`、`allowFixedInterval`、`autoUpdate` 和 `interval` 自动补齐。
 6. 在允许应用控制时，安装前停止正在运行的 `Clash Party`，安装后再拉起。
 7. 用原子写入方式覆盖目标目录，避免半写入状态。
 

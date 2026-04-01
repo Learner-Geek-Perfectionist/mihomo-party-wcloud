@@ -61,7 +61,7 @@ YAML
     assert_ruby \
         "profile fields inserted for Wcloud" \
         "$target_dir/profile.yaml" \
-        'item = document.fetch("items").find { |entry| entry["name"] == "Wcloud" } or raise "missing Wcloud"; raise "override not set" unless item["override"].is_a?(Array) && item["override"].size == 1; raise "autoUpdate not true" unless item["autoUpdate"] == true; raise "interval not 60" unless item["interval"] == 60'
+        'item = document.fetch("items").find { |entry| entry["name"] == "Wcloud" } or raise "missing Wcloud"; raise "override not set" unless item["override"].is_a?(Array) && item["override"].size == 1; raise "allowFixedInterval not true" unless item["allowFixedInterval"] == true; raise "autoUpdate not true" unless item["autoUpdate"] == true; raise "interval not 60" unless item["interval"] == 60'
 }
 
 test_override_name_match_is_exact() {
@@ -359,7 +359,7 @@ SH
     assert_ruby \
         "linux default target dir updates Wcloud under XDG config home" \
         "$target_dir/profile.yaml" \
-        'item = document.fetch("items").find { |entry| entry["name"] == "Wcloud" } or raise "missing Wcloud"; raise "override not set" unless item["override"].is_a?(Array) && item["override"].size == 1'
+        'item = document.fetch("items").find { |entry| entry["name"] == "Wcloud" } or raise "missing Wcloud"; raise "override not set" unless item["override"].is_a?(Array) && item["override"].size == 1; raise "allowFixedInterval not true" unless item["allowFixedInterval"] == true; raise "interval not 60" unless item["interval"] == 60'
 }
 
 test_linux_auto_mode_restarts_live_session() {
