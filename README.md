@@ -8,7 +8,7 @@
 - 自动为名为 `Wcloud` 的订阅挂载覆写规则
 - 自动把 `Wcloud` 订阅设置为每 6 小时刷新一次
 - 安装前后按需停启 `Clash Party`，避免运行中的旧状态把新配置覆盖回去
-- 基于 MetaCubeX `geosite.dat` 的白名单分流规则，并单独给 Claude 预留代理组
+- 基于 [MetaCubeX](https://github.com/MetaCubeX) `geosite.dat` 的白名单分流规则，并单独给 Claude 预留代理组
 
 ## 适用场景
 
