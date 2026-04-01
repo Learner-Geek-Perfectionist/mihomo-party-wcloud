@@ -328,7 +328,7 @@ log_success "override" "$OVERRIDE_ID.yaml"
 log_section "Configuring Wcloud subscription"
 if [[ "$PROFILE_STATUS" == "updated" ]]; then
     log_success "linked" "override $OVERRIDE_ID to Wcloud"
-    log_success "auto-update" "enabled, every 6 hours"
+    log_success "auto-update" "enabled, every 1 hour"
 else
     log_warn "skipped" "Wcloud subscription not found (add it first, then re-run)"
 fi

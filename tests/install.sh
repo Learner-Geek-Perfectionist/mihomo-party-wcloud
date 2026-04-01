@@ -61,7 +61,7 @@ YAML
     assert_ruby \
         "profile fields inserted for Wcloud" \
         "$target_dir/profile.yaml" \
-        'item = document.fetch("items").find { |entry| entry["name"] == "Wcloud" } or raise "missing Wcloud"; raise "override not set" unless item["override"].is_a?(Array) && item["override"].size == 1; raise "autoUpdate not true" unless item["autoUpdate"] == true; raise "interval not 360" unless item["interval"] == 360'
+        'item = document.fetch("items").find { |entry| entry["name"] == "Wcloud" } or raise "missing Wcloud"; raise "override not set" unless item["override"].is_a?(Array) && item["override"].size == 1; raise "autoUpdate not true" unless item["autoUpdate"] == true; raise "interval not 60" unless item["interval"] == 60'
 }
 
 test_override_name_match_is_exact() {
