@@ -2,3 +2,7 @@
 profile.yaml
 profiles/
 .DS_Store
+
+# disallow docs directories anywhere in the repo
+/docs/
+**/docs/
