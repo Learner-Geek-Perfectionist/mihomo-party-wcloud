@@ -41,6 +41,7 @@ rules:
   - DOMAIN,bing.com,DIRECT
   - DOMAIN,www.bing.com,DIRECT
   - DOMAIN,www2.bing.com,DIRECT
+  - DOMAIN-SUFFIX,tc.mm.bing.net,DIRECT
   - GEOSITE,bing,💬 人工智能
 
   # 国际服务的中国区子集走直连

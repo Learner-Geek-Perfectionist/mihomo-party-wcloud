@@ -117,6 +117,20 @@ YAML
     echo "ok: override file copied with normalized ID"
 }
 
+test_bing_search_assets_stay_direct() {
+    assert_ruby \
+        "Bing search asset CDN stays direct before GeoSite catch-all" \
+        "$REPO_DIR/override/geosite-whitelist-claude.yaml" \
+        'rules = document.fetch("rules"); direct_index = rules.index("DOMAIN-SUFFIX,tc.mm.bing.net,DIRECT") or raise "missing tc.mm.bing.net direct rule"; bing_index = rules.index("GEOSITE,bing,💬 人工智能") or raise "missing geosite bing rule"; raise "tc.mm.bing.net direct rule must come before geosite bing" unless direct_index < bing_index'
+}
+
+test_ipv6_is_disabled_without_native_ipv6_uplink() {
+    assert_ruby \
+        "core IPv6 is disabled while DNS IPv6 stays disabled" \
+        "$REPO_DIR/mihomo.yaml" \
+        'raise "expected top-level ipv6 to be false" unless document["ipv6"] == false; raise "expected dns.ipv6 to be false" unless document.dig("dns", "ipv6") == false'
+}
+
 test_missing_profile_does_not_fail() {
     local target_dir
     target_dir="$(fixture_dir)"
@@ -440,6 +454,8 @@ SH
 test_missing_profile_fields_are_created
 test_override_name_match_is_exact
 test_duplicate_overrides_are_normalized_and_idempotent
+test_bing_search_assets_stay_direct
+test_ipv6_is_disabled_without_native_ipv6_uplink
 test_missing_profile_does_not_fail
 test_invalid_profile_is_noop
 test_invalid_override_is_noop
